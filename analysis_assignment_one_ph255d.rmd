@@ -4,11 +4,6 @@ author: "Katherine Wolf"
 date: "February 20, 2020"
 output:
     pdf_document:
-       includes:
-         in_header: preamble-latex.tex
-    html_document:
-       includes:
-         before_body: preamble-mathjax.tex
     latex_engine: xelatex
 mainfont: Calibri
 monofont: Lucida Console
@@ -24,6 +19,263 @@ knitr::opts_chunk$set(echo = FALSE,
 
 
 ```{r my code}
+
+# need to call the libraries every time you begin a new R session
+library(dplyr)
+library(ggplot2)
+library(nnet)
+library(tidyverse)
+library(tableone)
+library(xtable)
+library(knitr)
+library(tableone)
+library(kableExtra)
+
+# read in data – suppose the file dataset.csv contains continuous variables var1 and var2, and a binary variable outcome
+nyses_raw_data <- read_csv("NYSES data for class.csv")
+
+# make working data file
+nyses_to_edit <- nyses_raw_data
+
+# id
+nyses_to_edit$id <- nyses_to_edit$QKEY2
+
+# community district
+nyses_to_edit$`Community district` <- nyses_to_edit$cd
+
+# neighborhood median income
+nyses_to_edit$`Neighborhood median income ($)` <- nyses_to_edit$medinc
+
+# neighborhood percent below poverty
+nyses_to_edit$`Neighborhood poverty (%)` <- nyses_to_edit$pbelowpv
+
+# borough
+borough_labels <- 
+  c("Bronx",
+    "Brooklyn", 
+    "Manhattan", 
+    "Queens", 
+    "Staten Island") # (value = order)
+
+nyses_to_edit$Borough <- 
+  factor(nyses_to_edit$boro, 
+         labels = borough_labels)
+
+# age
+age_labels <- 
+  c("18-24",
+    "25-34", 
+    "35-44", 
+    "45-54", 
+    "55-64", 
+    "65+") # (value = order)
+
+nyses_to_edit$`Age (years)` <- 
+  factor(nyses_to_edit$agecat, 
+         labels = age_labels)
+
+# race/ethnicity
+race_labels <- 
+  c("White",
+    "African American", 
+    "Asian", 
+    "Hispanic/Latinx", 
+    "Other") # (value = order)
+
+nyses_to_edit$`Race/ethnicity` <- 
+  factor(nyses_to_edit$racecat, labels = race_labels)
+
+# education
+ed_labels <- 
+  c("Less than high school",
+    "High school/GED", 
+    "Some college", 
+    "College graduate", 
+    "Graduate work") # (value = order)
+
+nyses_to_edit$`Education` <- 
+  factor(nyses_to_edit$edcat, labels = ed_labels)
+
+# income
+income_labels <- 
+  c(">= 40,000",
+    "40,001 to 80,000", 
+    "> 80,000") # (value = order)
+
+nyses_to_edit$`Income ($)` <- 
+  factor(nyses_to_edit$inc3cat, labels = income_labels)
+
+# binge drinking
+binge_labels <- 
+  c("No", 
+    "Yes") # (value = order)
+
+nyses_to_edit$`Binge drinking` <- 
+  factor(nyses_to_edit$binge, 
+         labels = binge_labels)
+
+nyses_analyze <- 
+  nyses_to_edit %>% 
+  select(id, 
+         `Community district`,
+         `Neighborhood median income ($)`, 
+         `Neighborhood poverty (%)`, 
+         Borough, 
+         `Age (years)`, 
+         `Race/ethnicity`, 
+         Education, 
+         `Income ($)`, 
+         `Binge drinking`)
+
+```
+
+
+```{r make a table one}
+
+# create a list of variables for the table 
+# (not including the stratification variable)
+table_one_variables <- c("Neighborhood median income ($)",
+                         "Neighborhood poverty (%)",
+                         "Borough", 
+                         "Age (years)", 
+                         "Race/ethnicity", 
+                         "Education", 
+                         "Income ($)")
+
+# create a list of which ones are categorical (factor)
+factor_variables <- c("Borough",
+                      "Age (years)", 
+                      "Race/ethnicity", 
+                      "Education", 
+                      "Income ($)")
+
+table_1 <- CreateTableOne(vars = table_one_variables, 
+                          factorVars = factor_variables,
+                          strata = "Binge drinking",
+                          data = nyses_analyze,
+                          test = FALSE, 
+                          includeNA = TRUE)
+
+save(table_1, 
+     file = "table_1.rdata")
+
+# print(table.1) # Standard output
+
+# Creates a formatted table, using kable from the knitr package
+# Would want to clean this up for publication purposes:
+hi <- kable(print(table_1,
+                  showAllLevels = TRUE,
+                  printToggle = FALSE,
+                  noSpaces = TRUE,
+                  catDigits = 1,
+                  contDigits = 1),
+            col.names = c("Level", "No binge drinking", "Binge drinking"),
+            caption=paste("Descriptive statistics for participants in",
+                          "NYSES cohort, stratified by binge drinking."))
+
+
+# hi <- kable(print(table_1,
+#                    showAllLevels = TRUE,
+#                    printToggle = FALSE,
+#                    noSpaces = TRUE,
+#                    catDigits=1,
+#                    contDigits=1),
+#       caption=paste("Descriptive statistics for participants in",
+#                     "NYSES cohort, stratified by binge drinking."))
+
+hi
+
+```
+
+# Univariate analyses
+
+```{r}
+
+nyses_analyze %>%  
+  summary()
+
+ggplot(data)
+
+```
+
+# Bivariate analyses by outcome
+
+## Neighborhood median income
+
+```{r}
+
+# neighborhood median income
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  summarise(Mean = mean(`Neighborhood median income ($)`), 
+            Median = median(`Neighborhood median income ($)`), 
+            `Standard deviation` = sd(`Neighborhood median income ($)`), 
+            Minimum = range(`Neighborhood median income ($)`)[1], 
+            Maximum = range(`Neighborhood median income ($)`)[2])
+
+# neighborhood median income
+ggplot(data = nyses_to_edit, 
+       aes(x = `Binge drinking`, 
+           y = `Neighborhood median income ($)`)) +
+  geom_boxplot()
+
+
+
+
+```
+
+## Neighborhood percent in poverty
+
+```{r univariate continuous analyses}
+
+# neighborhood percent in poverty
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  summarise(Mean = mean(`Neighborhood poverty (%)`), 
+            Median = median(`Neighborhood poverty (%)`), 
+            `Standard deviation` = sd(`Neighborhood poverty (%)`), 
+            Minimum = range(`Neighborhood poverty (%)`)[1], 
+            Maximum = range(`Neighborhood poverty (%)`)[2])
+
+# neighborhood median income
+ggplot(data = nyses_to_edit, 
+       aes(x = `Binge drinking`, 
+           y = `Neighborhood median income ($)`)) +
+  geom_boxplot()
+
+
+# neighborhood percent in poverty
+
+
+
+`Neighborhood median income ($)`
+
+
+# check for missing data (nas)
+na_counts <- 
+  map(nyses_to_edit,  # cycles through all variables
+      function(x) sum(is.na(x)))  # sums all "T" values from nas
+na_counts
+
+range(nyses_to_edit$pbelowpv)
+ggplot(data = nyses_to_edit, aes(x = binge, y = pbelowpv)) +
+  geom_boxplot()
+
+range(nyses_to_edit$cd)
+ggplot(data = nyses_to_edit, aes(x = binge, y = cd)) +
+  geom_boxplot()
+
+
+
+range(nyses_to_edit$medinc)
+ggplot(data = nyses_to_edit, aes(x = binge, y = medinc)) +
+  geom_boxplot()
+
+```
+
+
+
+```{r correlation table}
 
 ```
 
@@ -57,7 +309,8 @@ hist(df$var1)
 with(df, table(var1,var2))
 with(df, table(var1,var2, exclude=NULL))
 
-df %>%  group_by(catvar1) %>% summarise(mean_outcome = mean(outcome))
+df %>%
+  group_by(catvar1) %>% summarise(mean_outcome = mean(outcome))
 
 
 # bivariable relations
@@ -88,33 +341,11 @@ ggplot(df) + geom_point(aes(x=var1, y=outcome))  +
 ```
 
 
-# Question One
+# Report
 
-## State the point estimate and 95% confidence interval (CI) for the estimated risk difference (RD) and risk ratio (RR) for this analysis. (20 points)
+## 
+n = 4000 participants, for whom 40 were missing age, 112 were missing race, 77 were misisng education, and 580 were missing data on income.
 
-The point estimate for the estimated risk (cumulative incidence) difference derived using model-based standardization,[^1] which compares the modeled cumulative incidence of hypertension over the study period in a hypothetical study population in which everyone is obese to that in a hypothetical study population in which everyone is "ideal" weight, is `r round(stdized.rd, 3)` (95% CI: `r round(ci.rd.bca$bca[4], 3)`, `r round(ci.rd.bca$bca[5], 3)`).[^2] 
-
-The point estimate for the estimated risk (cumulative incidence) ratio (RR) derived using model-based standardization, which compares the modeled cumulative incidence of hypertension over the study period in a hypothetical study population in which everyone is obese to that in a hypothetical study population in which everyone is "ideal" weight, is `r round(stdized.rr, 3)` (95% CI: `r round(ci.rr.bca$bca[4], 3)`, `r round(ci.rr.bca$bca[5], 3)`).
-
-[^1]: Greenland S. Model-based Estimation of Relative Risks and Other Epidemiologic Measures in Studies of Common Outcomes and in Case-Control Studies. Am J Epidemiol 2004;160(4):301–5. doi:10.1093/aje/kwh221.
-
-[^2]: I calculated the CIs around the model-standardized point estimates of the RD and the RR using the bias-corrected and accelerated method in the `boot` R package, which corrects for both (1) the potential difference between the mean of all the bootstrap-sample-derived point estimates used to construct the 95% CI and the point estimate calculated from the original dataset, caused by asymmetry in the sampling distribution (the "bias-corrected" piece), as well as (2) changes in skewness in the distribution that vary with the value of the estimated parameter (the "accelerated" piece). See Carpenter J, Bithell J. Bootstrap confidence intervals: when, which, what? A practical guide for medical statisticians. Statistics in Medicine 2000;19(9):1141–1164. doi:10.1002/(SICI)1097-0258(20000515)19:9<1141::AID-SIM479>3.0.CO;2-F. (Page 1154.)
-
-\pagebreak
-
-# Question Two
-
-## Turn in the density plots for the risk difference (RD) and risk ratio (RR) measures. Briefly describe the pattern that you see. Does the pattern seem to indicate that the sampling distribution of the RD and RR are approximately normal? (10 points)
-
-```{r}
-
-par(mfrow=c(3,1))
-plot(density(rd.samples), main = "Bootstrapped Samples of Risk Difference")
-plot(density(rr.samples), main = "Bootstrapped Samples of Risk Ratio")
-plot(density(log(rr.samples)), main = "Bootstrapped Samples of Log Risk Ratio")
-par(mfrow=c(1,1))
-
-```
 
 
 ```{r ref.label=knitr::all_labels(), echo = T, eval = F}
