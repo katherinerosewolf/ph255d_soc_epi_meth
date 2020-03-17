@@ -98,7 +98,7 @@ nyses_to_edit$`Education` <-
 
 # income
 income_labels <- 
-  c(">= 40,000",
+  c("<= 40,000",
     "40,001 to 80,000", 
     "> 80,000") # (value = order)
 
@@ -128,6 +128,17 @@ nyses_analyze <-
          `Binge drinking`)
 
 ```
+
+# Overall report
+
+Detailed summary statistics are in Table 1.  The univariate analyses show a dataset of 4000 study participants, of whom 40 were missing data on age, 112 were missing data on race, 77 were missing data on education, and 580 were missing data on income.
+
+Participants appear unevenly distributed among the boroughs, with Staten Island particularly poorly represented.  Middle-aged participants between 35 and 54 appear somewhat more represented than those in other groups.  A plurality of participants are white (40%), followed by African American (26.4%) and Hispanic/Latinx (24.0%).  The most common educational level was completed high school.  A plurality of participants (40%) had the lowest income level.  (Additional analyses should break out joint covariate distributions, for example, neighborhood income and percentage in poverty by race.)
+
+In the bivariate analyses, 89% (n = 3562) of participants did not binge drink and 11% (n = 438) did.  Neighborhood income and neighborhood percent in poverty look similar between the two groups, although they are highly correlated (Pearson correlation coefficient -0.89), indicating that I should not use them both in one model.  Binge drinking appeared particularly prevalent among participants in Manhattan compared to other boroughs and in the 25-34 year-old age group (subsequently declining with age), among college graduates, and at higher income levels.
+
+
+\pagebreak
 
 
 ```{r make a table one}
@@ -187,20 +198,238 @@ hi
 
 ```
 
+
+\pagebreak
+
+
 # Univariate analyses
 
-```{r}
+## Numeric summaries
+
+```{r univariate general summary}
 
 nyses_analyze %>%  
   summary()
 
-ggplot(data)
+```
+
+\pagebreak
+
+## Neighborhood median income
+
+```{r univariate median income}
+
+# neighborhood median income
+nyses_analyze %>% 
+  summarise(Mean = mean(`Neighborhood median income ($)`), 
+            Median = median(`Neighborhood median income ($)`), 
+            `Standard deviation` = sd(`Neighborhood median income ($)`), 
+            Minimum = range(`Neighborhood median income ($)`)[1], 
+            Maximum = range(`Neighborhood median income ($)`)[2])
+
+# neighborhood median income
+ggplot(data = nyses_analyze, 
+       aes(y = `Neighborhood median income ($)`)) +
+  geom_boxplot()
 
 ```
+
+\pagebreak
+
+## Neighborhood median poverty
+
+```{r univariate poverty}
+
+# neighborhood percent in poverty
+nyses_analyze %>% 
+  ungroup() %>% 
+  summarise(Mean = mean(`Neighborhood poverty (%)`), 
+            Median = median(`Neighborhood poverty (%)`), 
+            `Standard deviation` = sd(`Neighborhood poverty (%)`), 
+            Minimum = range(`Neighborhood poverty (%)`)[1], 
+            Maximum = range(`Neighborhood poverty (%)`)[2])
+
+# neighborhood median income
+ggplot(data = nyses_analyze, 
+       aes(y = `Neighborhood median income ($)`)) +
+  geom_boxplot()
+
+```
+
+\pagebreak
+
+## Borough
+
+### Table 
+
+```{r univariate borough}
+
+borough_table <- 
+  tibble(Category = c(borough_labels),
+         Count = table(nyses_analyze$Borough, useNA = "ifany"), 
+         Percentage = round(prop.table(table(nyses_analyze$Borough, 
+                                             useNA = "ifany")),3)*100)
+
+borough_table
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  ggplot(aes(x = Borough)) +
+  geom_bar()
+
+```
+
+\pagebreak 
+
+## Age
+
+### Table
+
+```{r}
+
+age_table <- 
+  tibble(Category = c(age_labels, "NA"),
+         Count = table(nyses_analyze$`Age (years)`, useNA = "ifany"), 
+         Percentage = round(prop.table(table(nyses_analyze$`Age (years)`, useNA = "ifany")),3)*100)
+
+age_table
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  ggplot(aes(x = `Age (years)`)) +
+  geom_bar()
+
+```
+
+\pagebreak 
+
+## Race/ethnicity
+
+### Table
+
+```{r}
+
+re_table <- 
+  tibble(Category = c(race_labels, "NA"),
+         Count = table(nyses_analyze$`Race/ethnicity`, useNA = "ifany"), 
+         Percentage = round(prop.table(table(nyses_analyze$`Race/ethnicity`, 
+                                             useNA = "ifany")),3)*100)
+
+re_table
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  ggplot(aes(x = `Race/ethnicity`)) +
+  geom_bar()
+
+```
+
+\pagebreak
+
+## Education
+
+### Table
+
+```{r}
+
+ed_table <- 
+  tibble(Education = c(ed_labels, "NA"),
+         Count = table(nyses_analyze$Education, useNA = "ifany"), 
+         Percentage = round(prop.table(table(nyses_analyze$Education, 
+                                             useNA = "ifany")),3)*100)
+
+ed_table
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  ggplot(aes(x = Education)) +
+  geom_bar()
+
+```
+
+\pagebreak
+
+## Income
+
+### Table
+
+```{r}
+
+income_table <- 
+  tibble(Category = c(income_labels, "NA"),
+         Count = table(nyses_analyze$`Income ($)`, useNA = "ifany"), 
+         Percentage = round(prop.table(table(nyses_analyze$`Income ($)`, 
+                                             useNA = "ifany")),3)*100)
+
+income_table
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  ggplot(aes(x = `Income ($)`)) +
+  geom_bar()
+
+```
+
+\pagebreak
+
+## Binge drinking
+
+### Table
+
+```{r}
+
+binge_table <- 
+  tibble(Category = c(binge_labels),
+         Count = table(nyses_analyze$`Binge drinking`, useNA = "ifany"), 
+         Percentage = round(prop.table(table(nyses_analyze$`Binge drinking`, 
+                                             useNA = "ifany")),3)*100)
+
+binge_table
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  ggplot(aes(x = `Binge drinking`)) +
+  geom_bar()
+
+```
+
+\pagebreak
 
 # Bivariate analyses by outcome
 
 ## Neighborhood median income
+
+### Table
 
 ```{r}
 
@@ -213,20 +442,27 @@ nyses_analyze %>%
             Minimum = range(`Neighborhood median income ($)`)[1], 
             Maximum = range(`Neighborhood median income ($)`)[2])
 
+```
+
+### Box plots
+
+```{r}
+
 # neighborhood median income
 ggplot(data = nyses_to_edit, 
        aes(x = `Binge drinking`, 
            y = `Neighborhood median income ($)`)) +
   geom_boxplot()
 
-
-
-
 ```
+
+\pagebreak 
 
 ## Neighborhood percent in poverty
 
-```{r univariate continuous analyses}
+### Table
+
+```{r}
 
 # neighborhood percent in poverty
 nyses_analyze %>% 
@@ -237,115 +473,228 @@ nyses_analyze %>%
             Minimum = range(`Neighborhood poverty (%)`)[1], 
             Maximum = range(`Neighborhood poverty (%)`)[2])
 
+```
+
+### Box plots
+
+```{r}
+
 # neighborhood median income
 ggplot(data = nyses_to_edit, 
        aes(x = `Binge drinking`, 
-           y = `Neighborhood median income ($)`)) +
-  geom_boxplot()
-
-
-# neighborhood percent in poverty
-
-
-
-`Neighborhood median income ($)`
-
-
-# check for missing data (nas)
-na_counts <- 
-  map(nyses_to_edit,  # cycles through all variables
-      function(x) sum(is.na(x)))  # sums all "T" values from nas
-na_counts
-
-range(nyses_to_edit$pbelowpv)
-ggplot(data = nyses_to_edit, aes(x = binge, y = pbelowpv)) +
-  geom_boxplot()
-
-range(nyses_to_edit$cd)
-ggplot(data = nyses_to_edit, aes(x = binge, y = cd)) +
-  geom_boxplot()
-
-
-
-range(nyses_to_edit$medinc)
-ggplot(data = nyses_to_edit, aes(x = binge, y = medinc)) +
+           y = `Neighborhood poverty (%)`)) +
   geom_boxplot()
 
 ```
 
+### Correlation between neighborhood poverty and neighborhood income
 
+```{r}
 
-```{r correlation table}
-
-```
-
-
-
-```{r code from assignment, eval=FALSE, include=FALSE}
-
-# # load packages used in this assignment
-# # only need to install packages once
-# install.packages("dplyr") 
-# install.packages("ggplot2")
-# install.packages("nnet")
-
-# need to call the libraries every time you begin a new R session
-library(dplyr)
-library(ggplot2)
-library(nnet)
-
-# read in data – suppose the file dataset.csv contains continuous variables var1 and var2, and a binary variable outcome
-df <- read.csv("c:/dataset.csv")
-
-# create a categorical variable from a continuous variable 
-df$catvar1 <- df$var1
-df$catvar1 <- ifelse(df$catvar1<=500,0,ifelse(df$catvar1>500,1,NA))
-
-# describe variables
-summary(df$var1)
-table(df$var1)
-hist(df$var1)
-
-with(df, table(var1,var2))
-with(df, table(var1,var2, exclude=NULL))
-
-df %>%
-  group_by(catvar1) %>% summarise(mean_outcome = mean(outcome))
-
-
-# bivariable relations
-
-# to do a Pearson's chi-squared test 
-x2 <- chisq.test(df$var1, df$var2)
-
-# to see the results of the test
-x2 
-
-# to see the table of observed
-x2$observed
-
-# to see the percents by row 
-prop.table(x2$observed, 1) 
-
-# to see the percents by column
-prop.table(x2$observed, 2)
-
-# calculate correlation between variables 
-cor.test(df$var1, df$var2)
-
-# summarize relationship between variables in a plot with a lowess line 
-ggplot(df) + geom_point(aes(x=var1, y=outcome))  + 
-  geom_line(aes(x=var1, y=predict(loess(outcome~var1)))) + theme_bw()
-
+cor.test(nyses_analyze$`Neighborhood median income ($)`, 
+         nyses_analyze$`Neighborhood poverty (%)`)
 
 ```
 
+\pagebreak
 
-# Report
+## Borough
 
-## 
-n = 4000 participants, for whom 40 were missing age, 112 were missing race, 77 were misisng education, and 580 were missing data on income.
+### Table
 
+```{r}
+
+basic_two_borough <- table(nyses_analyze$Borough, 
+                           nyses_analyze$`Binge drinking`, 
+                           useNA = "ifany")
+
+prop_col_borough <- round(prop.table(basic_two_borough, 2), 3) * 100
+
+prop_row_borough <- round(prop.table(basic_two_borough, 1), 3) * 100
+
+full_two_table_borough <- 
+  tibble(Borough = c(borough_labels),
+         No = basic_two_borough[,1], 
+         `% No (row)` = prop_row_borough[,1], 
+         `% No (column)` = prop_col_borough[,1],
+         Yes = basic_two_borough[,2], 
+         `% Yes (row)` = prop_row_borough[,2], 
+         `% Yes (column)` = prop_col_borough[,2])
+
+full_two_table_borough
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  ggplot(aes(x = Borough, col = `Binge drinking`)) +
+  geom_bar(position = position_dodge())
+
+```
+
+\pagebreak
+
+## Age
+
+### Table
+
+```{r}
+
+basic_two_age <- table(nyses_analyze$`Age (years)`, 
+                           nyses_analyze$`Binge drinking`, 
+                           useNA = "always")
+
+prop_col_age <- round(prop.table(basic_two_age, 2), 3) * 100
+
+prop_row_age <- round(prop.table(basic_two_age, 1), 3) * 100
+
+full_two_table_age <- 
+  tibble(`Age (years)` = c(age_labels, NA),
+         No = basic_two_age[,1], 
+         `% No (row)` = prop_row_age[,1], 
+         `% No (column)` = prop_col_age[,1],
+         Yes = basic_two_age[,2], 
+         `% Yes (row)` = prop_row_age[,2], 
+         `% Yes (column)` = prop_col_age[,2])
+
+full_two_table_age
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  ggplot(aes(x = `Age (years)`, col = `Binge drinking`)) +
+  geom_bar(position = position_dodge())
+
+```
+
+\pagebreak
+
+## Race/ethnicity
+
+### Table
+
+```{r}
+
+basic_two_race <- table(nyses_analyze$`Race/ethnicity`, 
+                           nyses_analyze$`Binge drinking`, 
+                           useNA = "ifany")
+
+prop_col_race <- round(prop.table(basic_two_race, 2), 3) * 100
+
+prop_row_race <- round(prop.table(basic_two_race, 1), 3) * 100
+
+full_two_table_race <- 
+  tibble(`Race/ethnicity` = c(race_labels, NA),
+         No = basic_two_race[,1], 
+         `% No (row)` = prop_row_race[,1], 
+         `% No (column)` = prop_col_race[,1],
+         Yes = basic_two_race[,2], 
+         `% Yes (row)` = prop_row_race[,2], 
+         `% Yes (column)` = prop_col_race[,2])
+
+full_two_table_race
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  ggplot(aes(x = `Race/ethnicity`, col = `Binge drinking`)) +
+  geom_bar(position = position_dodge())
+
+```
+
+\pagebreak
+
+## Education
+
+### Table
+
+```{r}
+
+basic_two_education <- table(nyses_analyze$Education, 
+                           nyses_analyze$`Binge drinking`, 
+                           useNA = "ifany")
+
+prop_col_education <- round(prop.table(basic_two_education, 2), 3) * 100
+
+prop_row_education <- round(prop.table(basic_two_education, 1), 3) * 100
+
+full_two_table_education <- 
+  tibble(Education = c(ed_labels, NA),
+         No = basic_two_education[,1], 
+         `% No (row)` = prop_row_education[,1], 
+         `% No (column)` = prop_col_education[,1],
+         Yes = basic_two_education[,2], 
+         `% Yes (row)` = prop_row_education[,2], 
+         `% Yes (column)` = prop_col_education[,2])
+
+full_two_table_education
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  ggplot(aes(x = Education, col = `Binge drinking`)) +
+  geom_bar(position = position_dodge())
+
+```
+
+\pagebreak
+
+## Income
+
+### Table
+
+```{r}
+
+basic_two_income <- table(nyses_analyze$`Income ($)`, 
+                           nyses_analyze$`Binge drinking`, 
+                           useNA = "ifany")
+
+prop_col_income <- round(prop.table(basic_two_income, 2), 3) * 100
+
+prop_row_income <- round(prop.table(basic_two_income, 1), 3) * 100
+
+full_two_table_income <- 
+  tibble(Income = c(income_labels, NA),
+         No = basic_two_income[,1], 
+         `% No (row)` = prop_row_income[,1], 
+         `% No (column)` = prop_col_income[,1],
+         Yes = basic_two_income[,2], 
+         `% Yes (row)` = prop_row_income[,2], 
+         `% Yes (column)` = prop_col_income[,2])
+
+full_two_table_income
+
+```
+
+### Bar plot
+
+```{r}
+
+nyses_analyze %>% 
+  group_by(`Binge drinking`) %>% 
+  ggplot(aes(x = `Income ($)`, col = `Binge drinking`)) +
+  geom_bar(position = position_dodge())
+
+```
 
 
 ```{r ref.label=knitr::all_labels(), echo = T, eval = F}

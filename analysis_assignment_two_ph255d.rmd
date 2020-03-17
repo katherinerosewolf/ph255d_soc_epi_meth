@@ -1,0 +1,275 @@
+---
+title: "Descriptive Analysis of a Multilevel Data Set"
+author: "Katherine Wolf"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    pdf_document:
+    latex_engine: xelatex
+mainfont: Garamond
+monofont: Lucida Console
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+```
+
+
+```{r my code}
+
+# need to call the libraries every time you begin a new R session (from one)
+library(dplyr)
+library(ggplot2)
+library(nnet)
+library(tidyverse)
+library(tableone)
+library(xtable)
+library(knitr)
+library(tableone)
+library(kableExtra)
+library(here)
+
+# load packages necessary for this assignment
+library(lme4)
+library(sjstats)
+library(gee)
+library(car)
+
+```
+
+```{r assignment one code}
+
+# # read in data – suppose the file dataset.csv contains continuous variables var1 and var2, and a binary variable outcome
+# df <- read.csv("working_data.csv")
+# 
+# # create a categorical variable from a continuous variable 
+# df$catvar1 <- df$var1
+# df$catvar1 <- ifelse(df$catvar1<=500,0,ifelse(df$catvar1>500,1,NA))
+# 
+# # describe variables
+# summary(df$var1)
+# table(df$var1)
+# hist(df$var1)
+# 
+# with(df, table(var1,var2))
+# with(df, table(var1,var2, exclude=NULL))
+# 
+# df %>%  group_by(catvar1) %>% summarise(mean_outcome = mean(outcome))
+# 
+# 
+# # bivariable relations
+# 
+# # to do a Pearson's chi-squared test 
+# x2 <- chisq.test(df$var1, df$var2)
+# 
+# # to see the results of the test
+# x2 
+# 
+# # to see the table of observed
+# x2$observed
+# 
+# # to see the percents by row 
+# prop.table(x2$observed, 1) 
+# 
+# # to see the percents by column
+# prop.table(x2$observed, 2)
+# 
+# # calculate correlation between variables 
+# cor.test(df$var1, df$var2)
+# 
+# # summarize relationship between variables in a plot with a lowess line 
+# ggplot(df) + geom_point(aes(x=var1, y=outcome))  + 
+#   geom_line(aes(x=var1, y=predict(loess(outcome~var1)))) + theme_bw()
+
+
+```
+
+
+```{r assignment one answer key code}
+
+# GENERAL DESCRIPTION
+
+# read in data
+df <- read.csv("NYSES data for class.csv")
+
+# frequencies and percentages for categorical variables
+# before running these frequencies you might have applied formats if you find that helpful
+
+with(df, table(cd), exclude=NULL)
+with(df, prop.table(table(cd, exclude=NULL)))
+with(df, table(boro), exclude=NULL)
+with(df, prop.table(table(boro, exclude=NULL)))
+with(df, table(agecat), exclude=NULL)
+with(df, prop.table(table(agecat, exclude=NULL)))
+with(df, table(racecat), exclude=NULL)
+with(df, prop.table(table(racecat, exclude=NULL)))
+with(df, table(edcat), exclude=NULL)
+with(df, prop.table(table(edcat, exclude=NULL)))
+with(df, table(inc3cat), exclude=NULL)
+with(df, prop.table(table(inc3cat, exclude=NULL)))
+with(df, table(binge), exclude=NULL)
+with(df, prop.table(table(binge, exclude=NULL)))
+
+# means etc and plots for continuous variables
+
+df %>% summarise(min=min(medinc), median = median(medinc), mean=mean(medinc), max=max(medinc), sd=sd(medinc))
+
+df %>% summarise(min=min(pbelowpv), median = median(pbelowpv), mean=mean(pbelowpv), max=max(pbelowpv), sd=sd(pbelowpv))
+
+hist(df$medinc) 
+hist(df$pbelowpv)
+
+
+
+# MISSING DATA
+
+table(df$inc3cat, exclude=NULL)
+prop.table(table(df$inc3cat, exclude=NULL))
+
+df$inc3catm <- ifelse(is.na(df$inc3cat),0, df$inc3cat) 
+
+
+
+# CATEGORIZING VARIABLES
+
+# create quarters of neighborhood ses variables
+
+df$povq <- ifelse(df$pbelowpv>=min(df$pbelowpv)& df$pbelowpv<=11.40486,1, 
+      		ifelse(df$pbelowpv>11.40486 & df$pbelowpv<=19.1141,2, 
+      		  ifelse(df$pbelowpv>19.1141 & df$pbelowpv<=29.07797,3,
+    ifelse(df$pbelowpv>29.07797 & df$pbelowpv<=max(df$pbelowpv),4, NA))))
+
+
+df$medincq <- ifelse(df$medinc>=min(df$medinc) & df$medinc<=28780, 1, 
+                     ifelse(df$medinc>28780 & df$medinc<=38965, 2, 
+                ifelse(df$medinc>38965 & df$medinc<=48085,3,		           ifelse(df$medinc>48085 & df$medinc<=max(df$medinc),4,NA))))
+
+
+
+# BIVARIABLE RELATIONS 
+ggplot(df) + geom_point(aes(x=pbelowpv, y=binge))  + 
+  geom_line(aes(x=pbelowpv, y=predict(loess(binge~pbelowpv)))) + theme_bw()
+
+ggplot(df) + geom_point(aes(x=medinc, y=binge))  + 
+  geom_line(aes(x=medinc, y=predict(loess(binge~medinc)))) + theme_bw()
+
+# bivariable relations with binge drinking
+# can either save the test results as an object, then examine attributes of the object
+# or just do the test and have the result printed
+x2 <- chisq.test(df$povq, df$binge)
+x2
+x2$observed
+prop.table(x2$observed, 1) 
+
+chisq.test(df$medincq, df$binge)
+chisq.test(df$agecat, df$binge)
+chisq.test(df$racecat, df$binge)
+chisq.test(df$edcat, df$binge)
+chisq.test(df$inc3catm, df$binge)
+
+cor.test(df$medinc, df$pbelowpv)
+
+
+
+# MORE ON MISSING INCOME
+
+# need to create missing categories to include them in the chi-squared test
+
+agecatm <- ifelse(is.na(df$agecat),0,df$agecat)
+inc3catm <- ifelse(is.na(df$inc3cat),0,df$inc3cat)
+racecatm <- ifelse(is.na(df$racecat),0,df$racecat)
+edcatm <- ifelse(is.na(df$edcat),0,df$edcat)
+
+x2 <- chisq.test(agecatm, inc3catm)
+x2
+x2$observed
+prop.table(x2$observed, 1)
+
+x2 <- chisq.test(racecatm, inc3catm)
+x2 <- chisq.test(edcatm, inc3catm)
+
+
+
+mfit <- multinom(inc3cat ~ factor(agecat) + factor(racecat) + factor(edcat), data=df)
+
+summary(mfit)
+ 
+# because the regression drops those who are missing, need to identify those observations with missing covariates so predictions are assigned to the right observations 
+
+df$missing <- ifelse(is.na(df$agecat) | is.na(df$racecat) |is.na(df$edcat),1,0)
+
+df$incpr1 <- ifelse(df$missing==1,NA,predict(mfit, type="probs")[,1])
+df$incpr2 <- ifelse(df$missing==1,NA,predict(mfit, type="probs")[,2])
+df$incpr3 <- ifelse(df$missing==1,NA,predict(mfit, type="probs")[,3])
+
+
+```
+
+
+```{r assignment two code}
+
+#code from assignment 1 and the assignment 1 answer key that you need to read in data and create variables should be used here in combination with the code below
+
+# create quarters of neighborhood median income
+# note that if you create this variable as an ordered factor type, it will not work correctly with the factor command in the regressions below – you can use the str() command to find out what types of variables are in the dataset  
+df$medincq <- ifelse(df$medinc>=min(df$medinc) & df$medinc<=28780, 1, 
+                     ifelse(df$medinc>28780 & df$medinc<=38965, 2, 
+                            ifelse(df$medinc>38965 & df$medinc<=48085,3,
+                                   ifelse(df$medinc>48085 & df$medinc<=max(df$medinc),4,NA))))
+
+#for these model examples, binge is the outcome, medincq is a categorical variable of quarters of median income, and catvar1 is any categorical covariate
+
+# # load packages used in this assignment
+# # only need to install packages once
+# 
+# install.packages("lme4") 
+# install.packages("sjstats")
+# install.packages("gee")
+# install.packages("car")
+
+
+# load packages necessary for this assignment
+library(lme4)
+library(sjstats)
+library(gee)
+library(car)
+
+# # RANDOM EFFECTS MODEL
+# refit <- glmer(binge ~ factor(medincq) + factor(catvar1) + (1 | cd), family="binomial", data=df, nAGQ=0)
+# summary(refit)
+# icc(refit)
+# 
+# refit2 <- glm(binge ~ factor(medincq) + factor(catvar1), family="binomial", data=df, nAGQ=0)
+# # the model with the random intercept must go first in the anova function 
+# anova(refit, refit2, test=”Chisq”)
+# 
+# # POPULATION AVERAGE MODEL
+# # need to sort the data set by cd because the gee function in R assumes ID values that are not physically contiguous are different clusters
+# df <- df[order(df$cd),]
+# 
+# gfit <- gee(binge ~ factor(medincq) + factor(catvar1), id=cd, family="binomial", corstr="exchangeable", data=df)
+# 
+# gfit 
+# summary(gfit)
+# # summary produces huge correlation matrix but also provides needed standard errors
+# 
+# # R commands that could be helpful to know more about for this assignment – you can look them up using ? in R
+# 
+# linearHypothesis()
+# anova()
+# deltaMethod() 
+# 
+# # Note that when using linearHypothesis() and deltaMethod() with a GEE model, you have to supply the variance-covariance matrix. You can do this by setting vcov. = gfit[[“robust.variance”]]
+
+```
+
+
+
+
+```{r ref.label=knitr::all_labels(), echo = T, eval = F}
+
+```
+
